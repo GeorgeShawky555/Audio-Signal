@@ -1,0 +1,138 @@
+function audio_signal_gui()
+    % Create a MATLAB GUI for audio signal operations
+
+    % Create the main GUI figure
+    mainFigure = figure('name', 'Hello, Eng.Asmaa', 'position', [100, 100, 1000, 600], 'numbertitle', 'off');
+
+    % Define UI components for each operation
+    % Generate Beep Button
+    uicontrol('style', 'pushbutton', 'string', 'Generate Beep', 'position', [20,500,150,30],'callback',@generateBeep);
+
+    % Generate White Noise Button
+    uicontrol('style','pushbutton','string','Generate White Noise','position',[20,450,150,30],'callback',@generateWhiteNoise);
+
+    % Read and Play Audio File Button
+    uicontrol('style','pushbutton','string','Read and Play Audio','position',[20,400,150,30],'callback',@readAndPlayAudio);
+
+    % Add Noise Button
+    uicontrol('style','pushbutton','string','Add Noise','position',[20,350,150,30],'Callback',@addNoise);
+
+    % Record and Save Audio Button
+    uicontrol('style','pushbutton','string','Record Audio','position',[20,300,150,30],'callback',@recordAudio);
+
+    % Volume Control Buttons
+    uicontrol('style','pushbutton','string','Increase Volume','position',[20,250,150,30],'callback',@(~,~)adjustVolume(1.2));
+    uicontrol('style','pushbutton','string','Decrease Volume','position',[20,200,150,30],'callback',@(~,~)adjustVolume(0.8));
+
+    % Speed Control Buttons
+    uicontrol('style','pushbutton','string','Increase Speed','position',[20,150,150,30],'callback',@(~,~)adjustSpeed(1.5));
+    uicontrol('style','pushbutton','string','Decrease Speed','position',[20,100,150,30],'callback',@(~,~)adjustSpeed(0.7));
+
+    % Echo Button
+    uicontrol('style','pushbutton','string','Echo','position',[200,500,150,30],'callback',@applyEcho);
+
+    % Remove Noise Button
+    uicontrol('style','pushbutton','string','Remove Noise','position',[200,450,150,30],'callback',@removeNoise);
+
+    % Subtract and Multiply Signals Buttons
+    uicontrol('style','pushbutton','string','Subtract Signals','position',[200,400,150,30],'callback',@subtractSignals);
+    uicontrol('style','pushbutton','string','Multiply Signals','position',[200,350,150,30],'callback',@multiplySignals);
+
+    % Plot Audio Signal Button
+    uicontrol('style','pushbutton','string','Plot Signal','position',[200,300,150,30],'callback',@plotSignal);
+
+    % Axes for plotting
+    mainFigurePlace = axes('parent',mainFigure,'position',[0.43,0.1,0.55,0.8]);
+
+    % Store audio data globally (simplified approach for this example)
+    global audioData fs;
+    audioData = [];
+    fs = 44100; % Default sampling rate
+
+    % Callback functions
+    function generateBeep(~, ~)
+        beep;
+    end
+
+    function generateWhiteNoise(~, ~)
+        noise = randn(1, fs * 2); % 2 seconds of white noise
+        sound(noise, fs);
+    end
+
+    function readAndPlayAudio(~, ~)
+        [file, path] = uigetfile({'*.wav;*.mp3', 'Audio Files (*.wav, *.mp3)'});
+        
+        [audioData, fs] = audioread(fullfile(path, file));
+        sound(audioData, fs);
+    end
+
+    function addNoise(~, ~)
+        
+        noise = 0.02 * randn(size(audioData));
+        audioData = audioData + noise;
+        sound(audioData, fs);
+    end
+
+    function recordAudio(~, ~)
+        recObj = audiorecorder(fs, 16, 1);
+        disp('Recording started...');
+        recordblocking(recObj, 5); % Record for 5 seconds
+        disp('Recording is finished!');
+        audioData = getaudiodata(recObj);
+        audiowrite('recorded_audio.wav', audioData, fs);
+    end
+
+    function adjustVolume(scale)
+        
+        audioData = audioData * scale;
+        sound(audioData, fs);
+    end
+
+    function adjustSpeed(scale)
+        
+        sound(audioData, fs * scale);
+    end
+
+    function applyEcho(~, ~)
+        
+        delay = round(0.3 * fs); % 0.3 seconds delay
+        echoSignal = [audioData; zeros(delay, 1)] + [zeros(delay, 1); 0.6 * audioData];
+        audioData = echoSignal;
+        sound(audioData, fs);
+    end
+
+    function removeNoise(~, ~)
+        
+        % Apply a low-pass filter to remove high-frequency noise
+        filteredData = lowpass(audioData, 0.1 * fs, fs);
+        audioData = filteredData;
+        sound(audioData, fs);
+    end
+
+    function subtractSignals(~, ~)
+        % For simplicity, generate a synthetic second signal
+        
+        signal2 = sin(2 * pi * 440 * (0:1/fs:5));
+        audioData = audioData(1:length(signal2)) - signal2';
+        sound(audioData, fs);
+    end
+
+    function multiplySignals(~, ~)
+        % For simplicity, generate a synthetic second signal
+        signal2 = sin(2 * pi * 440 * (0:1/fs:5));
+        audioData = audioData(1:length(signal2)) .* signal2';
+        sound(audioData, fs);
+    end
+
+    function plotSignal(~, ~)
+        
+        
+        axes(mainFigurePlace);
+        %subplot(2, 1, 1);
+        plot(audioData);
+        title('Signal graph');
+        xlabel('Samples');
+        ylabel('Amplitude');
+
+    end
+end
